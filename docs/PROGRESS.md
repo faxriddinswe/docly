@@ -2,12 +2,8 @@
 
 ## CURRENT STATE / NEXT STEP
 - Project name: **Docly** (owner-chosen; replaces "Nexto" in the spec).
-- Done: Phases 0-8 (backend, frontend, hardening, deploy artifacts). Prod stack verified LOCALLY only; NOT deployed (BLOCKERS B3).
-- NEXT (Phase 9, not done): README.md (problem, features, screenshots in docs/screenshots, Mermaid, design decisions, one-command run,
-  load-test table: 2743 req, 0 failures, p95 38 ms, p99 92 ms, local/indicative), docs/uz/LEARN.md (Uzbek, per phase + 3 interview Q&A),
-  final full test run (last: 67 passed), final report in Uzbek.
-- Browser-verified so far: public booking, login, calendar, signup, doctor create + services + hours UI (save hours/time off/week view/mobile NOT checked).
-- Frontend has no automated tests.
+- Done: all phases 0-9 (README, LEARN.md added). Final: ruff/mypy clean, pytest 67 passed. Not deployed (BLOCKERS B3).
+- NEXT: only owner-side blockers B1-B4; optional: frontend tests (Playwright).
 
 ## Log
 - 2026-11-15 Phase 0: env checked (see ENVIRONMENT.md). Installed uv 0.13.8 + Python 3.12.16 user-level.
