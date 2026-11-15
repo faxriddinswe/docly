@@ -14,6 +14,9 @@ def get_redis() -> aioredis.Redis:
 
 async def reset_redis() -> None:
     global _client
-    if _client is not None:
-        await _client.aclose()
-    _client = None
+    client, _client = _client, None
+    if client is not None:
+        try:
+            await client.aclose()
+        except RuntimeError:  # its event loop is already closed (test teardown): nothing left to close
+            pass

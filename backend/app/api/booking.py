@@ -39,7 +39,7 @@ def _notice() -> timedelta:
     return timedelta(minutes=get_settings().min_booking_notice_minutes)
 
 
-def _ip(request: Request) -> str:
+def _ip(request: Request) -> str:  # same rule as main._client_ip
     fwd = request.headers.get("x-forwarded-for")
     return fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "?")
 
@@ -70,7 +70,7 @@ async def request_otp(slug: str, body: OtpRequestIn, request: Request) -> None:
     await resolve_clinic(slug)
     phone = otp.normalize_phone(body.phone)
     await rate_limit(f"otp:phone:{phone}", 3, 600)
-    await rate_limit(f"otp:ip:{_ip(request)}", 20, 600)
+    await rate_limit(f"otp:ip:{_ip(request)}", get_settings().otp_ip_limit, 600)
     r = get_redis()
     await otp.request_code(r, otp.get_sender(r), phone)
 
@@ -79,7 +79,7 @@ async def request_otp(slug: str, body: OtpRequestIn, request: Request) -> None:
 async def public_book(slug: str, body: PublicBookingIn, request: Request) -> PublicBookingOut:
     clinic = await resolve_clinic(slug)
     phone = otp.normalize_phone(body.phone)
-    await rate_limit(f"book:ip:{_ip(request)}", 30, 600)
+    await rate_limit(f"book:ip:{_ip(request)}", get_settings().book_ip_limit, 600)
     await otp.verify_code(get_redis(), phone, body.otp_code)
     async with tenant_session(clinic.id) as db:
         appt = await svc.create_appointment(

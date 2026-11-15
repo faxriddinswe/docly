@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     access_token_minutes: int = 15
     refresh_token_days: int = 30
     min_booking_notice_minutes: int = 60
+    rate_limit_per_minute: int = 300  # per client IP, all endpoints
+    auth_rate_limit_per_minute: int = 20  # per client IP, login/signup
+    otp_ip_limit: int = 20  # OTP requests per IP per 10 min
+    book_ip_limit: int = 30  # public bookings per IP per 10 min
     cors_origins: str = "http://localhost:3000"
     otp_ttl_seconds: int = 300
     otp_max_attempts: int = 5
@@ -32,6 +36,8 @@ class Settings(BaseSettings):
         weak = {"dev-only-change-me-0000000000000000", "change-me", ""}
         if self.env == "prod" and self.jwt_secret in weak:
             raise RuntimeError("JWT_SECRET must be set in production")
+        if self.env == "prod" and self.otp_sender == "fake":
+            raise RuntimeError("OTP_SENDER=fake is not allowed in production (see docs/BLOCKERS.md B1)")
 
 
 @lru_cache

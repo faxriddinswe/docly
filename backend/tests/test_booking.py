@@ -283,6 +283,6 @@ async def test_dev_otp_endpoint_exists_only_outside_prod(client: AsyncClient) ->
         ],
         capture_output=True,
         text=True,
-        env={**__import__("os").environ, "ENV": "prod", "JWT_SECRET": "x" * 40},
+        env={**__import__("os").environ, "ENV": "prod", "JWT_SECRET": "x" * 40, "OTP_SENDER": "eskiz"},
     )
     assert out.stdout.strip().endswith("False"), out.stderr
