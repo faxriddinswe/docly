@@ -56,3 +56,18 @@ def new_refresh_token() -> tuple[str, str]:
 
 def hash_refresh_token(raw: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def create_manage_token(appointment_id: uuid.UUID, clinic_id: uuid.UUID) -> str:
+    """Capability token handed to the patient so they can view/cancel/reschedule one booking."""
+    s = get_settings()
+    exp = datetime.now(UTC) + timedelta(days=90)
+    payload = {"aid": str(appointment_id), "cid": str(clinic_id), "typ": "manage", "exp": exp}
+    return jwt.encode(payload, s.jwt_secret, algorithm="HS256")
+
+
+def decode_manage_token(token: str) -> tuple[uuid.UUID, uuid.UUID]:
+    payload: dict[str, Any] = jwt.decode(token, get_settings().jwt_secret, algorithms=["HS256"])
+    if payload.get("typ") != "manage":
+        raise jwt.InvalidTokenError("wrong token type")
+    return uuid.UUID(payload["aid"]), uuid.UUID(payload["cid"])

@@ -10,6 +10,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from testcontainers.postgres import PostgresContainer
+from testcontainers.redis import RedisContainer
 
 BACKEND = Path(__file__).resolve().parent.parent
 
@@ -44,13 +45,20 @@ async def app_engine(pg_urls: dict[str, str]) -> AsyncIterator[AsyncEngine]:
     await eng.dispose()
 
 
+@pytest.fixture(scope="session")
+def redis_url() -> Iterator[str]:
+    with RedisContainer("redis:7-alpine") as r:
+        yield f"redis://{r.get_container_host_ip()}:{r.get_exposed_port(6379)}/0"
+
+
 @pytest.fixture(scope="session", autouse=True)
-def _env(pg_urls: dict[str, str]) -> Iterator[None]:
+def _env(pg_urls: dict[str, str], redis_url: str) -> Iterator[None]:
     """Point the application at the test containers."""
     from app.core.config import get_settings
 
     os.environ["DATABASE_URL"] = pg_urls["app"]
     os.environ["MIGRATION_DATABASE_URL"] = pg_urls["owner"]
+    os.environ["REDIS_URL"] = redis_url
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
@@ -60,10 +68,16 @@ def _env(pg_urls: dict[str, str]) -> Iterator[None]:
 async def client() -> AsyncIterator[AsyncClient]:
     from httpx import ASGITransport
 
+    from app.core.redis import reset_redis
     from app.db import reset_engine
     from app.main import create_app
 
+    await reset_redis()
+    from app.core.redis import get_redis
+
+    await get_redis().flushdb()  # isolate rate-limit/OTP state between tests
     await reset_engine()  # engine must belong to this test's event loop
     async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://t") as c:
         yield c
     await reset_engine()
+    await reset_redis()

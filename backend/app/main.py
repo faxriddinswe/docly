@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, Response
 from sqlalchemy import text
 
 from app.api import auth as auth_api
+from app.api import booking as booking_api
 from app.api import clinic as clinic_api
 from app.api import public as public_api
 from app.api import scheduling as scheduling_api
@@ -36,7 +37,9 @@ def create_app() -> FastAPI:
     app.include_router(clinic_api.router)
     app.include_router(superadmin_api.router)
     app.include_router(scheduling_api.router)
+    app.include_router(booking_api.public)
     app.include_router(public_api.router)
+    app.include_router(booking_api.staff)
 
     @app.get("/health")
     async def health() -> dict[str, str]:

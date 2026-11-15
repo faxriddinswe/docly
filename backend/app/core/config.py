@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     access_token_minutes: int = 15
     refresh_token_days: int = 30
     min_booking_notice_minutes: int = 60
+    otp_ttl_seconds: int = 300
+    otp_max_attempts: int = 5
+    otp_sender: str = "fake"  # fake | eskiz
+    eskiz_email: str = ""
+    eskiz_password: str = ""
+    eskiz_from: str = "4546"
     default_timezone: str = "Asia/Tashkent"
 
     def validate_prod(self) -> None:

@@ -19,3 +19,11 @@ Slots lie on a grid of `service.duration` starting at each working interval's st
 (never crosses lunch). Chosen over a fixed 15-min step: clean UI, fewer fragmented gaps. Trade-off: less flexible start times.
 ## D6 Soft delete for doctors/services
 DELETE sets is_active=false; appointments keep RESTRICT foreign keys so history never dangles.
+
+## D7 Booking validation layers
+1) service layer: slot must be exactly in computed availability (hours, time off, grid, notice, past, existing bookings);
+2) DB exclusion constraint is the source of truth: losing a race raises 23P01, mapped to 409 SLOT_TAKEN inside a savepoint
+so the request transaction stays usable. Pre-check failures return 409 SLOT_UNAVAILABLE.
+## D8 Patient self-service
+No patient accounts: booking returns a signed 'manage' JWT (90 days) allowing view/cancel/reschedule of that one appointment.
+OTP is verified at booking time (code stored hashed in Redis, 5 attempts, single use, per-phone/IP rate limits).
