@@ -4,6 +4,8 @@ Revision ID: 305c428b06be
 Revises:
 """
 
+import os
+
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
@@ -439,10 +441,14 @@ _COND = (
 
 
 def _rls_and_roles() -> None:
-    op.execute("""
+    # Password of the runtime role comes from APP_DB_PASSWORD (the default is for local dev only).
+    pw = os.environ.get("APP_DB_PASSWORD", "docly_app").replace("'", "''")
+    op.execute(f"""
         DO $$ BEGIN
           IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'docly_app') THEN
-            CREATE ROLE docly_app LOGIN PASSWORD 'docly_app' NOSUPERUSER NOBYPASSRLS;
+            CREATE ROLE docly_app LOGIN PASSWORD '{pw}' NOSUPERUSER NOBYPASSRLS;
+          ELSE
+            ALTER ROLE docly_app PASSWORD '{pw}';
           END IF;
         END $$;
     """)

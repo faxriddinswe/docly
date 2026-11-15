@@ -31,3 +31,10 @@
   (calendar day/week grid, appointments, doctors+hours+time off+services, patients, stats), superadmin page. `tsc`, `eslint`, `next build`: clean.
   Manual browser run (Chrome): public booking end-to-end -> appears in dashboard calendar. Bug found by that run and fixed: auth fetch wrapper treated /auth/me as
   public (no bearer) -> 401 loop. NOT browser-tested yet: signup, doctors editor, time off, superadmin, week view, mobile widths, reschedule on manage page.
+- 2026-11-15 Phase 7: global per-IP + login/signup rate limits (Redis, fail-open if Redis is down), JSON access logs with request_id, prod config guards
+  (refuses default JWT secret / fake OTP / default DB password), runtime DB role password from APP_DB_PASSWORD (migration edited in place: pre-release).
+  Backup: infra/backup/backup.sh (custom-format pg_dump, keeps newest N: ran 5x with KEEP=3 -> 3 files). Restore TESTED: restored dump into scratch DB
+  `docly_restore_test`, row counts equal to live (clinics 2, users 2, doctors 2, appointments 1, working_hours 20), exclusion constraint + 11 RLS policies present; scratch DB dropped.
+  Load test (locust, 50 users, 60 s, local, 1 uvicorn worker): 2743 requests, 0 failures, p50 15 ms, p95 38 ms, p99 92 ms, ~46 req/s (bounded by user think time).
+  BUG FOUND by the barrier race test (failed 3/3 runs): concurrent inserts into the GiST exclusion constraint can raise 40P01 deadlock_detected (-> would be HTTP 500).
+  Fix: pg_advisory_xact_lock per doctor before insert/reschedule + treat 40P01 like 23P01 (-> 409 SLOT_TAKEN). Race test then passed 4/4 runs; full suite green.

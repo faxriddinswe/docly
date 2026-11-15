@@ -43,4 +43,5 @@ class WorkerSettings:
     cron_jobs = [cron(scan_reminders, minute=set(range(60)), run_at_startup=True)]
     on_startup = startup
     on_shutdown = shutdown
+    health_check_interval = 30  # `arq --check` (docker healthcheck) reads this key
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)

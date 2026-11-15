@@ -47,8 +47,14 @@ class Patient(HttpUser):
         if self.client.post(f"/public/{SLUG}/otp", json={"phone": phone}, name="POST otp").status_code != 204:
             return
         code = self.client.get(f"/public/dev/otp/{phone}", name="GET dev-otp").json()["code"]
-        body = {"doctor_id": self.doctor, "service_id": self.service, "starts_at": random.choice(slots),
-                "phone": phone, "full_name": f"Load {uuid.uuid4().hex[:6]}", "otp_code": code}
+        body = {
+            "doctor_id": self.doctor,
+            "service_id": self.service,
+            "starts_at": random.choice(slots),
+            "phone": phone,
+            "full_name": f"Load {uuid.uuid4().hex[:6]}",
+            "otp_code": code,
+        }
         # 201 = booked, 409 = lost the race / slot taken: both are correct outcomes under load
         with self.client.post(f"/public/{SLUG}/bookings", json=body, name="POST booking", catch_response=True) as r:
             if r.status_code in (201, 409):

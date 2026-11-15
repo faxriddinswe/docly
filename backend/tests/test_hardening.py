@@ -52,7 +52,10 @@ def test_production_refuses_unsafe_config() -> None:
         Settings(env="prod", otp_sender="eskiz").validate_prod()
     with pytest.raises(RuntimeError, match="OTP_SENDER"):
         Settings(env="prod", jwt_secret="x" * 40, otp_sender="fake").validate_prod()
-    Settings(env="prod", jwt_secret="x" * 40, otp_sender="eskiz").validate_prod()  # ok
+    with pytest.raises(RuntimeError, match="default dev password"):
+        Settings(env="prod", jwt_secret="x" * 40, otp_sender="eskiz").validate_prod()
+    ok = "postgresql+asyncpg://docly_app:s3cret@db/docly"
+    Settings(env="prod", jwt_secret="x" * 40, otp_sender="eskiz", database_url=ok).validate_prod()
 
 
 async def test_login_ok_not_affected_by_normal_use(client: AsyncClient) -> None:

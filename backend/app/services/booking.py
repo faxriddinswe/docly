@@ -2,10 +2,10 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, text
 from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
@@ -30,9 +30,18 @@ TRANSITIONS: dict[AppointmentStatus, set[AppointmentStatus]] = {
 }
 
 
-def _is_overlap_violation(exc: IntegrityError) -> bool:
+def _is_overlap_violation(exc: DBAPIError) -> bool:
+    # 23P01 = exclusion_violation (the normal loser of a race); 40P01 = deadlock_detected, which two
+    # concurrent inserts into an exclusion constraint can still produce -> same meaning: slot contended.
     sqlstate = getattr(exc.orig, "sqlstate", None)
-    return sqlstate == "23P01" or "appointments_no_overlap" in str(exc)
+    return sqlstate in ("23P01", "40P01") or "appointments_no_overlap" in str(exc)
+
+
+async def _lock_doctor(session: AsyncSession, doctor_id: uuid.UUID) -> None:
+    """Serialize writers per doctor (released at commit). Without it, concurrent inserts that conflict on the
+    GiST exclusion constraint can deadlock; with it the loser cleanly gets 23P01. The constraint stays the
+    source of truth; this lock only removes the deadlock."""
+    await session.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:k, 0))"), {"k": f"doctor:{doctor_id}"})
 
 
 async def _upsert_patient(session: AsyncSession, clinic_id: uuid.UUID, phone: str, full_name: str) -> uuid.UUID:
@@ -100,11 +109,12 @@ async def create_appointment(
         during=Range(start, end, bounds="[)"),
         status=AppointmentStatus.booked,
     )
+    await _lock_doctor(session, doctor_id)
     try:
         async with session.begin_nested():  # savepoint: a lost race must not poison the transaction
             session.add(appt)
             await session.flush()
-    except IntegrityError as exc:
+    except DBAPIError as exc:
         if _is_overlap_violation(exc):
             # The DB exclusion constraint is the source of truth for double booking.
             raise AppError("SLOT_TAKEN", "This slot was just taken, please pick another", 409) from exc
@@ -140,12 +150,13 @@ async def reschedule(
         starts_at=new_start,
         min_notice=min_notice,
     )
+    await _lock_doctor(session, appt.doctor_id)
     try:
         async with session.begin_nested():
             appt.during = Range(start, end, bounds="[)")
             appt.status = AppointmentStatus.booked  # must be re-confirmed
             await session.flush()
-    except IntegrityError as exc:
+    except DBAPIError as exc:
         if _is_overlap_violation(exc):
             raise AppError("SLOT_TAKEN", "This slot was just taken, please pick another", 409) from exc
         raise

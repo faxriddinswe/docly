@@ -38,6 +38,8 @@ class Settings(BaseSettings):
             raise RuntimeError("JWT_SECRET must be set in production")
         if self.env == "prod" and self.otp_sender == "fake":
             raise RuntimeError("OTP_SENDER=fake is not allowed in production (see docs/BLOCKERS.md B1)")
+        if self.env == "prod" and ":docly_app@" in self.database_url:
+            raise RuntimeError("DATABASE_URL uses the default dev password")
 
 
 @lru_cache

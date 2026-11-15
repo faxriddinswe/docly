@@ -40,3 +40,11 @@ Telegram start payload limit is 64 chars of [A-Za-z0-9_-], so a JWT does not fit
 Next.js 16 App Router, all data via TanStack Query on the client (tokens in localStorage: short access token + rotating refresh). Cache Components disabled
 (scaffold default) since the app is a client-rendered SPA behind auth; `output: standalone` for a small Docker image; system fonts (no Google Fonts at build time).
 Types generated from backend OpenAPI (`backend/scripts/dump_openapi.py` -> `frontend/openapi.json` -> `lib/schema.d.ts`). Trade-off: localStorage tokens are XSS-exposed.
+
+## D12 Per-doctor advisory lock around inserts
+Context: true parallel bookings into `EXCLUDE USING gist` can deadlock (each insert waits for the other's in-flight tuple) -> 40P01, not the expected 23P01.
+Options: (a) retry on 40P01; (b) serialize per doctor with pg_advisory_xact_lock; (c) SERIALIZABLE. Decision: (b)+map 40P01 to 409 as defense. The lock is held until commit
+and is per doctor so different doctors never block each other. The exclusion constraint remains the correctness guarantee (the lock is only to avoid deadlocks).
+## D13 Rate limiting
+Fixed-window Redis counters (simple, O(1)). Global per-IP 300/min, login/signup 20/min, OTP per phone 3/10 min, per IP 20/10 min, bookings per IP 30/10 min. If Redis is down the
+middleware fails open (availability over throttling) and logs a warning. Client IP = first X-Forwarded-For hop (the edge Caddy sets it); spoofable if the API were exposed directly - it is not (no published ports).
