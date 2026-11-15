@@ -13,3 +13,14 @@
 - Status: all logic is tested with FakeTransport, and the ARQ worker is tested against real Redis. `AiogramTransport` and the aiogram
   handlers in app/bot/main.py are **not exercised against the real Telegram API**. Without a token the worker skips reminders
   (logs a warning) and booking responses carry `telegram_link: null`.
+
+## B3 Production server, domain and DNS (deployment)
+- Need: a VPS reachable by SSH, a domain, and a DNS A record `SUBDOMAIN.BASE_DOMAIN -> server IP`.
+- Steps: copy `.env.deploy.example` to `.env.deploy` (gitignored) and fill `DEPLOY_HOST, DEPLOY_USER, SSH_KEY_PATH, BASE_DOMAIN, SUBDOMAIN`;
+  the deploy user must be in the `docker` group and own/write `/opt` (or an owner must pre-create `/opt/docly`). Then run `scripts/deploy.sh`.
+  For CI/CD set GitHub secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` and repository variables `BASE_DOMAIN`, `SUBDOMAIN`.
+- Status: NOT deployed. Everything else is built; the production stack was verified locally (see docs/DEPLOY.md). `deploy.sh` remote steps are verified
+  only in `DRY_RUN=1` mode (printed commands reviewed), never against a real server.
+
+## B4 Git remote
+- No git remote is configured, so nothing was pushed (protocol A9). To publish: `git remote add origin <url> && git push -u origin main`; CI then runs on GitHub.
