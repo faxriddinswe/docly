@@ -22,15 +22,7 @@ async def list_clinics(
 ) -> Page[ClinicOut]:
     async with system_session() as s:
         total = (await s.execute(select(func.count()).select_from(Clinic))).scalar_one()
-        rows = (
-            (
-                await s.execute(
-                    select(Clinic).order_by(Clinic.created_at).limit(limit).offset(offset)
-                )
-            )
-            .scalars()
-            .all()
-        )
+        rows = (await s.execute(select(Clinic).order_by(Clinic.created_at).limit(limit).offset(offset))).scalars().all()
         items = [ClinicOut.model_validate(c) for c in rows]
     return Page(items=items, total=total, limit=limit, offset=offset)
 

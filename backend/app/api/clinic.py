@@ -17,9 +17,7 @@ router = APIRouter(tags=["clinic"])
 
 
 @router.get("/clinic", response_model=ClinicOut)
-async def get_clinic(
-    p: Principal = Depends(get_staff), db: AsyncSession = Depends(get_db)
-) -> Clinic:
+async def get_clinic(p: Principal = Depends(get_staff), db: AsyncSession = Depends(get_db)) -> Clinic:
     clinic = await db.get(Clinic, p.clinic_id)
     if clinic is None:
         raise AppError("NOT_FOUND", "Clinic not found", 404)
@@ -27,9 +25,7 @@ async def get_clinic(
 
 
 def _staff_out(m: ClinicMembership, u: User) -> StaffOut:
-    return StaffOut(
-        membership_id=m.id, user_id=u.id, email=u.email, full_name=u.full_name, role=m.role.value
-    )
+    return StaffOut(membership_id=m.id, user_id=u.id, email=u.email, full_name=u.full_name, role=m.role.value)
 
 
 @router.get("/staff", response_model=Page[StaffOut])
@@ -42,9 +38,7 @@ async def list_staff(
     assert p.clinic_id is not None
     total = (
         await db.execute(
-            select(func.count())
-            .select_from(ClinicMembership)
-            .where(ClinicMembership.clinic_id == p.clinic_id)
+            select(func.count()).select_from(ClinicMembership).where(ClinicMembership.clinic_id == p.clinic_id)
         )
     ).scalar_one()
     rows = (

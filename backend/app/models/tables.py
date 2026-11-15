@@ -60,9 +60,7 @@ class User(Base, IdMixin, CreatedMixin):
     email: Mapped[str] = mapped_column(String(320), unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     full_name: Mapped[str] = mapped_column(String(200))
-    is_superadmin: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default=text("false")
-    )
+    is_superadmin: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
 
 
@@ -87,9 +85,7 @@ class RefreshToken(Base, IdMixin, CreatedMixin):
 class Doctor(Base, IdMixin, CreatedMixin):
     __tablename__ = "doctors"
     clinic_id: Mapped[uuid.UUID] = _fk("clinics.id")
-    user_id: Mapped[uuid.UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
-    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     full_name: Mapped[str] = mapped_column(String(200))
     specialty: Mapped[str] = mapped_column(String(120), server_default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
@@ -167,9 +163,7 @@ class Appointment(Base, IdMixin, CreatedMixin):
     doctor_id: Mapped[uuid.UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("doctors.id", ondelete="RESTRICT"), index=True
     )
-    service_id: Mapped[uuid.UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("services.id", ondelete="RESTRICT")
-    )
+    service_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("services.id", ondelete="RESTRICT"))
     patient_id: Mapped[uuid.UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("patients.id", ondelete="RESTRICT"), index=True
     )

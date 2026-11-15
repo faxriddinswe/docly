@@ -11,6 +11,4 @@ async def rate_limit(key: str, limit: int, window_seconds: int) -> None:
         await r.expire(k, window_seconds)
     if n > limit:
         ttl = await r.ttl(k)
-        raise AppError(
-            "RATE_LIMITED", "Too many requests, try again later", 429, {"retry_after": max(ttl, 1)}
-        )
+        raise AppError("RATE_LIMITED", "Too many requests, try again later", 429, {"retry_after": max(ttl, 1)})

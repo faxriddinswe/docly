@@ -14,11 +14,7 @@ async def test_seed_creates_two_clinics_idempotently(pg_urls: dict[str, str], mo
     async with eng.begin() as conn:
         await conn.execute(text("SELECT set_config('app.system','on',true)"))
         n = (
-            await conn.execute(
-                text(
-                    "SELECT count(*) FROM clinics WHERE slug IN ('smile-dental','chilonzor-medical')"
-                )
-            )
+            await conn.execute(text("SELECT count(*) FROM clinics WHERE slug IN ('smile-dental','chilonzor-medical')"))
         ).scalar_one()
     await eng.dispose()
     get_settings.cache_clear()

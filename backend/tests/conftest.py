@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
@@ -18,16 +19,12 @@ BACKEND = Path(__file__).resolve().parent.parent
 @pytest.fixture(scope="session")
 def pg_urls() -> Iterator[dict[str, str]]:
     """Real PostgreSQL 16 in a container, migrated with Alembic (no SQLite, no mocks)."""
-    with PostgresContainer(
-        "postgres:16-alpine", username="docly", password="docly", dbname="docly"
-    ) as pg:
+    with PostgresContainer("postgres:16-alpine", username="docly", password="docly", dbname="docly") as pg:
         host, port = pg.get_container_host_ip(), pg.get_exposed_port(5432)
         owner = f"postgresql+asyncpg://docly:docly@{host}:{port}/docly"
         app = f"postgresql+asyncpg://docly_app:docly_app@{host}:{port}/docly"
         env = {**os.environ, "MIGRATION_DATABASE_URL": owner, "DATABASE_URL": app}
-        subprocess.run(
-            [sys.executable, "-m", "alembic", "upgrade", "head"], cwd=BACKEND, env=env, check=True
-        )
+        subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], cwd=BACKEND, env=env, check=True)
         yield {"owner": owner, "app": app}
 
 
@@ -72,6 +69,10 @@ async def client() -> AsyncIterator[AsyncClient]:
     from app.db import reset_engine
     from app.main import create_app
 
+    eng = create_async_engine(os.environ["MIGRATION_DATABASE_URL"])
+    async with eng.begin() as conn:  # clean slate per test: no cross-test pollution
+        await conn.execute(text("TRUNCATE clinics, users CASCADE"))
+    await eng.dispose()
     await reset_redis()
     from app.core.redis import get_redis
 

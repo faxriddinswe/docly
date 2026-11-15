@@ -52,9 +52,7 @@ class EskizOtpSender:
 
     async def send(self, phone: str, code: str) -> None:
         async with httpx.AsyncClient(timeout=10) as c:
-            login = await c.post(
-                f"{self.BASE}/auth/login", data={"email": self.email, "password": self.password}
-            )
+            login = await c.post(f"{self.BASE}/auth/login", data={"email": self.email, "password": self.password})
             login.raise_for_status()
             token = login.json()["data"]["token"]
             r = await c.post(

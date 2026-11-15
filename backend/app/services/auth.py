@@ -55,9 +55,7 @@ async def signup_clinic(
         raise AppError("EMAIL_TAKEN", "Email already registered", 409)
     if (await session.execute(select(Clinic.id).where(Clinic.slug == slug))).first():
         raise AppError("SLUG_TAKEN", "Clinic address is taken", 409)
-    clinic = Clinic(
-        name=clinic_name, slug=slug, timezone=timezone or get_settings().default_timezone
-    )
+    clinic = Clinic(name=clinic_name, slug=slug, timezone=timezone or get_settings().default_timezone)
     user = User(email=email, password_hash=hash_password(password), full_name=full_name)
     session.add_all([clinic, user])
     try:
@@ -72,9 +70,7 @@ async def signup_clinic(
 async def authenticate(
     session: AsyncSession, *, email: str, password: str, clinic_slug: str | None
 ) -> tuple[User, Clinic | None, Role | None]:
-    user = (
-        await session.execute(select(User).where(User.email == email.strip().lower()))
-    ).scalar_one_or_none()
+    user = (await session.execute(select(User).where(User.email == email.strip().lower()))).scalar_one_or_none()
     # Same error for unknown user / bad password / inactive: no account enumeration.
     if user is None or not user.is_active or not verify_password(password, user.password_hash):
         raise AppError("INVALID_CREDENTIALS", "Invalid email or password", 401)
@@ -122,9 +118,7 @@ async def issue_tokens(
         )
     )
     await session.flush()
-    access = create_access_token(
-        user.id, clinic_id, role.value if role else None, user.is_superadmin
-    )
+    access = create_access_token(user.id, clinic_id, role.value if role else None, user.is_superadmin)
     return TokenPair(access, raw, clinic_id, role.value if role else None)
 
 
@@ -132,9 +126,7 @@ async def rotate_refresh(session: AsyncSession, raw: str) -> TokenPair:
     """Refresh rotation: each token is single-use. Reusing an old one revokes the whole family."""
     tok = (
         await session.execute(
-            select(RefreshToken)
-            .where(RefreshToken.token_hash == hash_refresh_token(raw))
-            .with_for_update()
+            select(RefreshToken).where(RefreshToken.token_hash == hash_refresh_token(raw)).with_for_update()
         )
     ).scalar_one_or_none()
     if tok is None:
@@ -176,8 +168,6 @@ async def rotate_refresh(session: AsyncSession, raw: str) -> TokenPair:
 async def revoke_refresh(session: AsyncSession, raw: str) -> None:
     await session.execute(
         update(RefreshToken)
-        .where(
-            RefreshToken.token_hash == hash_refresh_token(raw), RefreshToken.revoked_at.is_(None)
-        )
+        .where(RefreshToken.token_hash == hash_refresh_token(raw), RefreshToken.revoked_at.is_(None))
         .values(revoked_at=datetime.now(UTC))
     )

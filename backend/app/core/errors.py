@@ -7,9 +7,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
 class AppError(Exception):
-    def __init__(
-        self, code: str, message: str, status_code: int = 400, details: Any = None
-    ) -> None:
+    def __init__(self, code: str, message: str, status_code: int = 400, details: Any = None) -> None:
         self.code = code
         self.message = message
         self.status_code = status_code
@@ -27,9 +25,7 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def _validation(_: Request, exc: RequestValidationError) -> JSONResponse:
-        return JSONResponse(
-            _body("VALIDATION_ERROR", "Invalid request", jsonable(exc.errors())), 422
-        )
+        return JSONResponse(_body("VALIDATION_ERROR", "Invalid request", jsonable(exc.errors())), 422)
 
     @app.exception_handler(StarletteHTTPException)
     async def _http(_: Request, exc: StarletteHTTPException) -> JSONResponse:

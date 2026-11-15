@@ -45,11 +45,7 @@ async def _doctor_or_404(db: AsyncSession, p: Principal, doctor_id: uuid.UUID) -
 
 
 async def _doctor_out(db: AsyncSession, d: Doctor) -> DoctorOut:
-    ids = (
-        (await db.execute(select(DoctorService.service_id).where(DoctorService.doctor_id == d.id)))
-        .scalars()
-        .all()
-    )
+    ids = (await db.execute(select(DoctorService.service_id).where(DoctorService.doctor_id == d.id))).scalars().all()
     return DoctorOut(
         id=d.id,
         full_name=d.full_name,
@@ -68,31 +64,21 @@ async def list_doctors(
     db: AsyncSession = Depends(get_db),
 ) -> Page[DoctorOut]:
     cid = _cid(p)
-    total = (
-        await db.execute(select(func.count()).select_from(Doctor).where(Doctor.clinic_id == cid))
-    ).scalar_one()
+    total = (await db.execute(select(func.count()).select_from(Doctor).where(Doctor.clinic_id == cid))).scalar_one()
     rows = (
         (
             await db.execute(
-                select(Doctor)
-                .where(Doctor.clinic_id == cid)
-                .order_by(Doctor.full_name)
-                .limit(limit)
-                .offset(offset)
+                select(Doctor).where(Doctor.clinic_id == cid).order_by(Doctor.full_name).limit(limit).offset(offset)
             )
         )
         .scalars()
         .all()
     )
-    return Page(
-        items=[await _doctor_out(db, d) for d in rows], total=total, limit=limit, offset=offset
-    )
+    return Page(items=[await _doctor_out(db, d) for d in rows], total=total, limit=limit, offset=offset)
 
 
 @router.post("/doctors", response_model=DoctorOut, status_code=201)
-async def create_doctor(
-    body: DoctorIn, p: Principal = Depends(WRITE), db: AsyncSession = Depends(get_db)
-) -> DoctorOut:
+async def create_doctor(body: DoctorIn, p: Principal = Depends(WRITE), db: AsyncSession = Depends(get_db)) -> DoctorOut:
     repo: ScopedRepo[Doctor] = ScopedRepo(db, Doctor, _cid(p))
     d = await repo.add(**body.model_dump())
     await audit.record(
@@ -161,13 +147,7 @@ async def set_doctor_services(
 ) -> DoctorOut:
     d = await _doctor_or_404(db, p, doctor_id)
     found = set(
-        (
-            await db.execute(
-                select(Service.id).where(
-                    Service.clinic_id == _cid(p), Service.id.in_(body.service_ids)
-                )
-            )
-        )
+        (await db.execute(select(Service.id).where(Service.clinic_id == _cid(p), Service.id.in_(body.service_ids))))
         .scalars()
         .all()
     )
@@ -206,31 +186,21 @@ async def list_services(
     db: AsyncSession = Depends(get_db),
 ) -> Page[ServiceOut]:
     cid = _cid(p)
-    total = (
-        await db.execute(select(func.count()).select_from(Service).where(Service.clinic_id == cid))
-    ).scalar_one()
+    total = (await db.execute(select(func.count()).select_from(Service).where(Service.clinic_id == cid))).scalar_one()
     rows = (
         (
             await db.execute(
-                select(Service)
-                .where(Service.clinic_id == cid)
-                .order_by(Service.name)
-                .limit(limit)
-                .offset(offset)
+                select(Service).where(Service.clinic_id == cid).order_by(Service.name).limit(limit).offset(offset)
             )
         )
         .scalars()
         .all()
     )
-    return Page(
-        items=[ServiceOut.model_validate(s) for s in rows], total=total, limit=limit, offset=offset
-    )
+    return Page(items=[ServiceOut.model_validate(s) for s in rows], total=total, limit=limit, offset=offset)
 
 
 @router.post("/services", response_model=ServiceOut, status_code=201)
-async def create_service(
-    body: ServiceIn, p: Principal = Depends(WRITE), db: AsyncSession = Depends(get_db)
-) -> Service:
+async def create_service(body: ServiceIn, p: Principal = Depends(WRITE), db: AsyncSession = Depends(get_db)) -> Service:
     repo: ScopedRepo[Service] = ScopedRepo(db, Service, _cid(p))
     s = await repo.add(**body.model_dump())
     await audit.record(
@@ -298,9 +268,7 @@ def _check_no_overlap(intervals: list[WorkingInterval]) -> None:
         day.sort(key=lambda x: x.start_time)
         for a, b in zip(day, day[1:], strict=False):
             if b.start_time < a.end_time:
-                raise AppError(
-                    "OVERLAPPING_HOURS", "Working intervals overlap on the same weekday", 422
-                )
+                raise AppError("OVERLAPPING_HOURS", "Working intervals overlap on the same weekday", 422)
 
 
 @router.get("/doctors/{doctor_id}/working-hours", response_model=list[WorkingInterval])
@@ -319,10 +287,7 @@ async def get_working_hours(
         .scalars()
         .all()
     )
-    return [
-        WorkingInterval(weekday=r.weekday, start_time=r.start_time, end_time=r.end_time)
-        for r in rows
-    ]
+    return [WorkingInterval(weekday=r.weekday, start_time=r.start_time, end_time=r.end_time) for r in rows]
 
 
 @router.put("/doctors/{doctor_id}/working-hours", response_model=list[WorkingInterval])
@@ -375,15 +340,7 @@ async def list_time_off(
     doctor_id: uuid.UUID, p: Principal = Depends(get_staff), db: AsyncSession = Depends(get_db)
 ) -> list[TimeOffOut]:
     d = await _doctor_or_404(db, p, doctor_id)
-    rows = (
-        (
-            await db.execute(
-                select(TimeOff).where(TimeOff.doctor_id == d.id).order_by(TimeOff.during)
-            )
-        )
-        .scalars()
-        .all()
-    )
+    rows = (await db.execute(select(TimeOff).where(TimeOff.doctor_id == d.id).order_by(TimeOff.during))).scalars().all()
     return [_off_out(t) for t in rows]
 
 

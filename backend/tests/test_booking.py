@@ -31,9 +31,7 @@ async def otp_for(client: AsyncClient, c: dict[str, Any], phone: str) -> str:
     return str(code)
 
 
-def payload(
-    c: dict[str, Any], start: str, phone: str, code: str, name: str = "Ali Valiyev"
-) -> dict[str, Any]:
+def payload(c: dict[str, Any], start: str, phone: str, code: str, name: str = "Ali Valiyev") -> dict[str, Any]:
     return {
         "doctor_id": c["doctor"]["id"],
         "service_id": c["service"]["id"],
@@ -44,13 +42,9 @@ def payload(
     }
 
 
-async def book(
-    client: AsyncClient, c: dict[str, Any], start: str, phone: str = "+998901112233"
-) -> Any:
+async def book(client: AsyncClient, c: dict[str, Any], start: str, phone: str = "+998901112233") -> Any:
     code = await otp_for(client, c, phone)
-    return await client.post(
-        f"/public/{c['o']['slug']}/bookings", json=payload(c, start, phone, code)
-    )
+    return await client.post(f"/public/{c['o']['slug']}/bookings", json=payload(c, start, phone, code))
 
 
 async def test_full_public_flow(client: AsyncClient) -> None:
@@ -66,9 +60,7 @@ async def test_full_public_flow(client: AsyncClient) -> None:
     assert appts["total"] == 1 and appts["items"][0]["patient_phone"] == "+998901112233"
     pts = (await client.get("/patients", headers=c["o"]["h"])).json()
     assert pts["total"] == 1
-    hist = (
-        await client.get(f"/patients/{pts['items'][0]['id']}/appointments", headers=c["o"]["h"])
-    ).json()
+    hist = (await client.get(f"/patients/{pts['items'][0]['id']}/appointments", headers=c["o"]["h"])).json()
     assert len(hist) == 1
 
 
@@ -77,9 +69,7 @@ async def test_second_booking_same_slot_is_409(client: AsyncClient) -> None:
     first = (await slots(client, c))[0]
     assert (await book(client, c, first, "+998901111111")).status_code == 201
     r = await book(client, c, first, "+998902222222")
-    assert (
-        r.status_code == 409
-    )  # pre-check catches it; the DB constraint is proven in the concurrency test
+    assert r.status_code == 409  # pre-check catches it; the DB constraint is proven in the concurrency test
 
 
 async def test_concurrent_bookings_exactly_one_wins(client: AsyncClient) -> None:
@@ -91,9 +81,7 @@ async def test_concurrent_bookings_exactly_one_wins(client: AsyncClient) -> None
     codes = [await otp_for(client, c, ph) for ph in phones]
     results = await asyncio.gather(
         *[
-            client.post(
-                f"/public/{c['o']['slug']}/bookings", json=payload(c, start, ph, cd, f"Patient {i}")
-            )
+            client.post(f"/public/{c['o']['slug']}/bookings", json=payload(c, start, ph, cd, f"Patient {i}"))
             for i, (ph, cd) in enumerate(zip(phones, codes, strict=True))
         ]
     )
@@ -105,9 +93,7 @@ async def test_concurrent_bookings_exactly_one_wins(client: AsyncClient) -> None
     assert (await client.get("/appointments", headers=c["o"]["h"])).json()["total"] == 1
 
 
-async def test_race_decided_by_db_exclusion_constraint(
-    client: AsyncClient, monkeypatch: Any
-) -> None:
+async def test_race_decided_by_db_exclusion_constraint(client: AsyncClient, monkeypatch: Any) -> None:
     """Force a TRUE race: a barrier inside the real availability check makes all N requests pass the
     service-layer check simultaneously, so only the PostgreSQL exclusion constraint can stop them."""
     from app.services import scheduling
@@ -122,17 +108,13 @@ async def test_race_decided_by_db_exclusion_constraint(
         return result
 
     c = await setup_clinic(client)
-    start = (await slots(client, c))[
-        4
-    ]  # look the slot up BEFORE patching (the endpoint uses it too)
+    start = (await slots(client, c))[4]  # look the slot up BEFORE patching (the endpoint uses it too)
     monkeypatch.setattr(scheduling, "available_slots", synced)
     phones = [f"+99891{i:07d}" for i in range(1, n + 1)]
     codes = [await otp_for(client, c, ph) for ph in phones]
     results = await asyncio.gather(
         *[
-            client.post(
-                f"/public/{c['o']['slug']}/bookings", json=payload(c, start, ph, cd, f"Racer {i}")
-            )
+            client.post(f"/public/{c['o']['slug']}/bookings", json=payload(c, start, ph, cd, f"Racer {i}"))
             for i, (ph, cd) in enumerate(zip(phones, codes, strict=True))
         ]
     )
@@ -151,9 +133,7 @@ async def test_otp_rules(client: AsyncClient) -> None:
         json=payload(c, start, phone, "000000" if code != "000000" else "111111"),
     )
     assert bad.status_code == 422 and bad.json()["error"]["code"] == "OTP_INVALID"
-    ok = await client.post(
-        f"/public/{c['o']['slug']}/bookings", json=payload(c, start, phone, code)
-    )
+    ok = await client.post(f"/public/{c['o']['slug']}/bookings", json=payload(c, start, phone, code))
     assert ok.status_code == 201
     # code is single use
     again = await client.post(
@@ -164,14 +144,10 @@ async def test_otp_rules(client: AsyncClient) -> None:
     # rate limit: 3 OTP requests per phone per window
     p2 = "+998905556677"
     for _ in range(3):
-        assert (
-            await client.post(f"/public/{c['o']['slug']}/otp", json={"phone": p2})
-        ).status_code == 204
+        assert (await client.post(f"/public/{c['o']['slug']}/otp", json={"phone": p2})).status_code == 204
     r = await client.post(f"/public/{c['o']['slug']}/otp", json={"phone": p2})
     assert r.status_code == 429 and r.json()["error"]["code"] == "RATE_LIMITED"
-    assert (
-        await client.post(f"/public/{c['o']['slug']}/otp", json={"phone": "123"})
-    ).status_code == 422
+    assert (await client.post(f"/public/{c['o']['slug']}/otp", json={"phone": "123"})).status_code == 422
 
 
 async def test_otp_brute_force_lockout(client: AsyncClient) -> None:
@@ -182,9 +158,7 @@ async def test_otp_brute_force_lockout(client: AsyncClient) -> None:
     wrong = "000000" if real != "000000" else "111111"
     statuses = []
     for _ in range(7):
-        r = await client.post(
-            f"/public/{c['o']['slug']}/bookings", json=payload(c, start, phone, wrong)
-        )
+        r = await client.post(f"/public/{c['o']['slug']}/bookings", json=payload(c, start, phone, wrong))
         statuses.append(r.status_code)
     assert statuses[:5] == [422] * 5 and statuses[5:] == [429, 429]
     # even the correct code no longer works after lockout
@@ -225,9 +199,7 @@ async def test_cancel_and_reschedule_via_manage_token(client: AsyncClient) -> No
     assert cancelled.json()["status"] == "cancelled"
     assert sl[5] in await slots(client, c)
     # cancelled appointment cannot be rescheduled or cancelled again
-    assert (
-        await client.post(f"/public/manage/{token}/reschedule", json={"starts_at": sl[1]})
-    ).status_code == 409
+    assert (await client.post(f"/public/manage/{token}/reschedule", json={"starts_at": sl[1]})).status_code == 409
     assert (await client.post(f"/public/manage/{token}/cancel")).status_code == 409
     assert (await client.get("/public/manage/garbage")).status_code == 401
 
@@ -292,6 +264,4 @@ async def test_clinic_b_cannot_see_or_change_a_appointments(client: AsyncClient)
         assert resp.status_code == 404, (path, resp.text)
     assert (await client.get("/appointments", headers=b["h"])).json()["total"] == 0
     assert (await client.get("/patients", headers=b["h"])).json()["total"] == 0
-    assert (await client.get(f"/appointments/{aid}", headers=a["o"]["h"])).json()[
-        "status"
-    ] == "booked"
+    assert (await client.get(f"/appointments/{aid}", headers=a["o"]["h"])).json()["status"] == "booked"

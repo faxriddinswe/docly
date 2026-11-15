@@ -108,12 +108,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_clinic_memberships")),
         sa.UniqueConstraint("clinic_id", "user_id", name=op.f("uq_clinic_memberships_clinic_id")),
     )
-    op.create_index(
-        op.f("ix_clinic_memberships_clinic_id"), "clinic_memberships", ["clinic_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_clinic_memberships_user_id"), "clinic_memberships", ["user_id"], unique=False
-    )
+    op.create_index(op.f("ix_clinic_memberships_clinic_id"), "clinic_memberships", ["clinic_id"], unique=False)
+    op.create_index(op.f("ix_clinic_memberships_user_id"), "clinic_memberships", ["user_id"], unique=False)
     op.create_table(
         "doctors",
         sa.Column("clinic_id", sa.UUID(), nullable=False),
@@ -134,9 +130,7 @@ def upgrade() -> None:
             name=op.f("fk_doctors_clinic_id_clinics"),
             ondelete="CASCADE",
         ),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.id"], name=op.f("fk_doctors_user_id_users"), ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("fk_doctors_user_id_users"), ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_doctors")),
     )
     op.create_index(op.f("ix_doctors_clinic_id"), "doctors", ["clinic_id"], unique=False)
@@ -186,9 +180,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_refresh_tokens")),
         sa.UniqueConstraint("token_hash", name=op.f("uq_refresh_tokens_token_hash")),
     )
-    op.create_index(
-        op.f("ix_refresh_tokens_family_id"), "refresh_tokens", ["family_id"], unique=False
-    )
+    op.create_index(op.f("ix_refresh_tokens_family_id"), "refresh_tokens", ["family_id"], unique=False)
     op.create_index(op.f("ix_refresh_tokens_user_id"), "refresh_tokens", ["user_id"], unique=False)
     op.create_table(
         "services",
@@ -278,9 +270,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f("ix_appointments_clinic_id"), "appointments", ["clinic_id"], unique=False)
     op.create_index(op.f("ix_appointments_doctor_id"), "appointments", ["doctor_id"], unique=False)
-    op.create_index(
-        op.f("ix_appointments_patient_id"), "appointments", ["patient_id"], unique=False
-    )
+    op.create_index(op.f("ix_appointments_patient_id"), "appointments", ["patient_id"], unique=False)
     op.create_table(
         "doctor_services",
         sa.Column("doctor_id", sa.UUID(), nullable=False),
@@ -306,9 +296,7 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("doctor_id", "service_id", name=op.f("pk_doctor_services")),
     )
-    op.create_index(
-        op.f("ix_doctor_services_clinic_id"), "doctor_services", ["clinic_id"], unique=False
-    )
+    op.create_index(op.f("ix_doctor_services_clinic_id"), "doctor_services", ["clinic_id"], unique=False)
     op.create_table(
         "time_off",
         sa.Column("clinic_id", sa.UUID(), nullable=False),
@@ -356,12 +344,8 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_working_hours")),
     )
-    op.create_index(
-        op.f("ix_working_hours_clinic_id"), "working_hours", ["clinic_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_working_hours_doctor_id"), "working_hours", ["doctor_id"], unique=False
-    )
+    op.create_index(op.f("ix_working_hours_clinic_id"), "working_hours", ["clinic_id"], unique=False)
+    op.create_index(op.f("ix_working_hours_doctor_id"), "working_hours", ["doctor_id"], unique=False)
     op.create_table(
         "notifications",
         sa.Column("clinic_id", sa.UUID(), nullable=False),
@@ -390,12 +374,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_notifications")),
         sa.UniqueConstraint("appointment_id", "kind", name=op.f("uq_notifications_appointment_id")),
     )
-    op.create_index(
-        op.f("ix_notifications_appointment_id"), "notifications", ["appointment_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_notifications_clinic_id"), "notifications", ["clinic_id"], unique=False
-    )
+    op.create_index(op.f("ix_notifications_appointment_id"), "notifications", ["appointment_id"], unique=False)
+    op.create_index(op.f("ix_notifications_clinic_id"), "notifications", ["clinic_id"], unique=False)
     # ### end Alembic commands ###
     _rls_and_roles()
 

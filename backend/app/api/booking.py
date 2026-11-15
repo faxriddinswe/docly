@@ -12,7 +12,7 @@ from app.core.config import get_settings
 from app.core.errors import AppError
 from app.core.ratelimit import rate_limit
 from app.core.redis import get_redis
-from app.core.security import create_manage_token, decode_manage_token
+from app.core.security import create_manage_token, decode_manage_token, make_link_token
 from app.db import system_session, tenant_session
 from app.models.tables import Appointment, AppointmentStatus, Clinic, Doctor, Patient, Service
 from app.schemas.booking import (
@@ -93,7 +93,9 @@ async def public_book(slug: str, body: PublicBookingIn, request: Request) -> Pub
             actor_user_id=None,
         )
         out = await _out(db, appt)
-    return PublicBookingOut(appointment=out, manage_token=create_manage_token(appt.id, clinic.id))
+    username = get_settings().telegram_bot_username
+    link = f"https://t.me/{username}?start={make_link_token(appt.patient_id, clinic.id)}" if username else None
+    return PublicBookingOut(appointment=out, manage_token=create_manage_token(appt.id, clinic.id), telegram_link=link)
 
 
 async def _manage_ctx(token: str) -> tuple[Clinic, uuid.UUID]:
@@ -120,9 +122,7 @@ async def manage_cancel(token: str) -> AppointmentOut:
     clinic, appt_id = await _manage_ctx(token)
     async with tenant_session(clinic.id) as db:
         a = await svc.get_appointment(db, clinic.id, appt_id)
-        await svc.change_status(
-            db, appt=a, new_status=AppointmentStatus.cancelled, actor_user_id=None
-        )
+        await svc.change_status(db, appt=a, new_status=AppointmentStatus.cancelled, actor_user_id=None)
         return await _out(db, a)
 
 
@@ -173,11 +173,7 @@ async def list_appointments(
     if p.role == "doctor":  # doctors only see their own calendar
         q = q.where(Appointment.doctor_id.in_(select(Doctor.id).where(Doctor.user_id == p.user_id)))
     total = (await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
-    rows = (
-        (await db.execute(q.order_by(func.lower(Appointment.during)).limit(limit).offset(offset)))
-        .scalars()
-        .all()
-    )
+    rows = (await db.execute(q.order_by(func.lower(Appointment.during)).limit(limit).offset(offset))).scalars().all()
     return Page(items=[await _out(db, a) for a in rows], total=total, limit=limit, offset=offset)
 
 
@@ -255,15 +251,8 @@ async def list_patients(
         like = f"%{q}%"
         stmt = stmt.where(Patient.phone.ilike(like) | Patient.full_name.ilike(like))
     total = (await db.execute(select(func.count()).select_from(stmt.subquery()))).scalar_one()
-    rows = (
-        (await db.execute(stmt.order_by(Patient.full_name).limit(limit).offset(offset)))
-        .scalars()
-        .all()
-    )
-    items = [
-        PatientOut(id=r.id, full_name=r.full_name, phone=r.phone, created_at=r.created_at)
-        for r in rows
-    ]
+    rows = (await db.execute(stmt.order_by(Patient.full_name).limit(limit).offset(offset))).scalars().all()
+    items = [PatientOut(id=r.id, full_name=r.full_name, phone=r.phone, created_at=r.created_at) for r in rows]
     return Page(items=items, total=total, limit=limit, offset=offset)
 
 
@@ -273,9 +262,7 @@ async def patient_history(
 ) -> list[AppointmentOut]:
     assert p.clinic_id is not None
     pt = (
-        await db.execute(
-            select(Patient).where(Patient.clinic_id == p.clinic_id, Patient.id == patient_id)
-        )
+        await db.execute(select(Patient).where(Patient.clinic_id == p.clinic_id, Patient.id == patient_id))
     ).scalar_one_or_none()
     if pt is None:
         raise AppError("NOT_FOUND", "Patient not found", 404)

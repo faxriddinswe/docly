@@ -19,15 +19,11 @@ async def _seed(conn, name: str) -> dict[str, uuid.UUID]:  # type: ignore[no-unt
         {"d": ids["doctor"], "c": ids["clinic"]},
     )
     await conn.execute(
-        text(
-            "INSERT INTO services(id,clinic_id,name,duration_minutes,price_minor) VALUES (:s,:c,'Check',30,0)"
-        ),
+        text("INSERT INTO services(id,clinic_id,name,duration_minutes,price_minor) VALUES (:s,:c,'Check',30,0)"),
         {"s": ids["service"], "c": ids["clinic"]},
     )
     await conn.execute(
-        text(
-            "INSERT INTO patients(id,clinic_id,phone,full_name) VALUES (:p,:c,'+998900000000','P')"
-        ),
+        text("INSERT INTO patients(id,clinic_id,phone,full_name) VALUES (:p,:c,'+998900000000','P')"),
         {"p": ids["patient"], "c": ids["clinic"]},
     )
     return ids
@@ -79,15 +75,11 @@ async def test_rls_isolates_tenants(owner_engine: AsyncEngine, app_engine: Async
         # no tenant context -> nothing visible
         assert (await conn.execute(text("SELECT count(*) FROM doctors"))).scalar_one() == 0
     async with app_engine.begin() as conn:
-        await conn.execute(
-            text("SELECT set_config('app.current_clinic_id', :c, true)"), {"c": str(a["clinic"])}
-        )
+        await conn.execute(text("SELECT set_config('app.current_clinic_id', :c, true)"), {"c": str(a["clinic"])})
         rows = (await conn.execute(text("SELECT id FROM doctors"))).scalars().all()
         assert rows == [a["doctor"]]
         # cannot touch B's rows
-        upd = await conn.execute(
-            text("UPDATE doctors SET full_name='hacked' WHERE id=:i"), {"i": b["doctor"]}
-        )
+        upd = await conn.execute(text("UPDATE doctors SET full_name='hacked' WHERE id=:i"), {"i": b["doctor"]})
         assert upd.rowcount == 0
         # cannot insert into B
         with pytest.raises((DBAPIError, IntegrityError)):

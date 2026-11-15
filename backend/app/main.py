@@ -24,9 +24,7 @@ def create_app() -> FastAPI:
     install_error_handlers(app)
 
     @app.middleware("http")
-    async def request_id_mw(
-        request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
+    async def request_id_mw(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         rid = request.headers.get("x-request-id") or uuid.uuid4().hex
         request_id_var.set(rid)
         response = await call_next(request)

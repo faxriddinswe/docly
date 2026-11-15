@@ -8,9 +8,7 @@ from tests.helpers import signup
 MONDAY = "2030-03-04"
 
 
-async def make_doctor(
-    client: AsyncClient, owner: dict[str, Any], hours: bool = True
-) -> dict[str, Any]:
+async def make_doctor(client: AsyncClient, owner: dict[str, Any], hours: bool = True) -> dict[str, Any]:
     h = owner["h"]
     svc = (
         await client.post(
@@ -20,9 +18,7 @@ async def make_doctor(
         )
     ).json()
     doc = (await client.post("/doctors", headers=h, json={"full_name": "Dr. Karimov"})).json()
-    r = await client.put(
-        f"/doctors/{doc['id']}/services", headers=h, json={"service_ids": [svc["id"]]}
-    )
+    r = await client.put(f"/doctors/{doc['id']}/services", headers=h, json={"service_ids": [svc["id"]]})
     assert r.status_code == 200, r.text
     if hours:
         iv = [
@@ -30,9 +26,7 @@ async def make_doctor(
             for d in range(5)
             for s, e in (("09:00:00", "13:00:00"), ("14:00:00", "18:00:00"))
         ]
-        r = await client.put(
-            f"/doctors/{doc['id']}/working-hours", headers=h, json={"intervals": iv}
-        )
+        r = await client.put(f"/doctors/{doc['id']}/working-hours", headers=h, json={"intervals": iv})
         assert r.status_code == 200, r.text
     return {"doctor": doc, "service": svc}
 
@@ -42,9 +36,7 @@ async def test_crud_and_validation(client: AsyncClient) -> None:
     ids = await make_doctor(client, o)
     d = (await client.get(f"/doctors/{ids['doctor']['id']}", headers=o["h"])).json()
     assert d["service_ids"] == [ids["service"]["id"]]
-    bad = await client.post(
-        "/services", headers=o["h"], json={"name": "X1", "duration_minutes": 0, "price_minor": 1}
-    )
+    bad = await client.post("/services", headers=o["h"], json={"name": "X1", "duration_minutes": 0, "price_minor": 1})
     assert bad.status_code == 422 and bad.json()["error"]["code"] == "VALIDATION_ERROR"
     overlap = await client.put(
         f"/doctors/{d['id']}/working-hours",
@@ -57,9 +49,7 @@ async def test_crud_and_validation(client: AsyncClient) -> None:
         },
     )
     assert overlap.status_code == 422 and overlap.json()["error"]["code"] == "OVERLAPPING_HOURS"
-    r = await client.patch(
-        f"/services/{ids['service']['id']}", headers=o["h"], json={"price_minor": 5}
-    )
+    r = await client.patch(f"/services/{ids['service']['id']}", headers=o["h"], json={"price_minor": 5})
     assert r.json()["price_minor"] == 5
     assert (await client.delete(f"/doctors/{d['id']}", headers=o["h"])).status_code == 204
     page = (await client.get("/doctors?limit=1", headers=o["h"])).json()
@@ -88,9 +78,7 @@ async def test_public_availability(client: AsyncClient) -> None:
     assert off.status_code == 201
     body = (await client.get(f"/public/{o['slug']}/availability", params=q)).json()
     assert len(body["slots"]) == 8
-    assert all(
-        datetime.fromisoformat(s).hour >= 9 for s in body["slots"]
-    )  # >= 14:00 local = 09:00 UTC
+    assert all(datetime.fromisoformat(s).hour >= 9 for s in body["slots"])  # >= 14:00 local = 09:00 UTC
     # weekend: no hours configured
     q["date"] = "2030-03-09"
     assert (await client.get(f"/public/{o['slug']}/availability", params=q)).json()["slots"] == []

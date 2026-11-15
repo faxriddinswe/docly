@@ -46,9 +46,7 @@ def _sessionmaker() -> async_sessionmaker[AsyncSession]:
 @asynccontextmanager
 async def tenant_session(clinic_id: uuid.UUID) -> AsyncIterator[AsyncSession]:
     async with _sessionmaker()() as session, session.begin():
-        await session.execute(
-            text("SELECT set_config('app.current_clinic_id', :c, true)"), {"c": str(clinic_id)}
-        )
+        await session.execute(text("SELECT set_config('app.current_clinic_id', :c, true)"), {"c": str(clinic_id)})
         yield session
 
 

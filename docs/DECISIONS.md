@@ -27,3 +27,11 @@ so the request transaction stays usable. Pre-check failures return 409 SLOT_UNAV
 ## D8 Patient self-service
 No patient accounts: booking returns a signed 'manage' JWT (90 days) allowing view/cancel/reschedule of that one appointment.
 OTP is verified at booking time (code stored hashed in Redis, 5 attempts, single use, per-phone/IP rate limits).
+
+## D9 Reminder idempotency and staleness
+Claim-then-send: INSERT notification ON CONFLICT DO NOTHING (UNIQUE appointment_id+kind) before sending; failure deletes the claim so it is
+retried; crash between claim and send = at-most-once (accepted; duplicates are worse than a missed reminder). Windows: 24h reminder when
+start in [now+24h-60m, now+24h], 2h reminder tolerance 30m, so a booking made 3h ahead never gets a bogus '24h' reminder. Selection reads
+current state under FOR UPDATE SKIP LOCKED; reschedule deletes notification rows.
+## D10 Deep link
+Telegram start payload limit is 64 chars of [A-Za-z0-9_-], so a JWT does not fit: token = b64(patient_id|clinic_id|exp) + b64(HMAC-12 bytes).

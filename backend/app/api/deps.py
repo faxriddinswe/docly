@@ -66,9 +66,7 @@ async def get_db(p: Principal = Depends(get_staff)) -> AsyncIterator[AsyncSessio
     """Tenant-scoped session: RLS context is the token's clinic, never a request field."""
     assert p.clinic_id is not None
     async with tenant_session(p.clinic_id) as session:
-        active = (
-            await session.execute(select(Clinic.is_active).where(Clinic.id == p.clinic_id))
-        ).scalar_one_or_none()
+        active = (await session.execute(select(Clinic.is_active).where(Clinic.id == p.clinic_id))).scalar_one_or_none()
         if not active:
             raise AppError("CLINIC_SUSPENDED", "This clinic is suspended", 403)
         yield session

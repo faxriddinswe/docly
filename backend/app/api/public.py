@@ -18,9 +18,7 @@ router = APIRouter(prefix="/public", tags=["public"])
 async def resolve_clinic(slug: str) -> Clinic:
     """Public slug -> clinic. Uses the explicit system scope because there is no tenant yet."""
     async with system_session() as s:
-        clinic = (
-            await s.execute(select(Clinic).where(Clinic.slug == slug.lower()))
-        ).scalar_one_or_none()
+        clinic = (await s.execute(select(Clinic).where(Clinic.slug == slug.lower()))).scalar_one_or_none()
     if clinic is None or not clinic.is_active:
         raise AppError("CLINIC_NOT_FOUND", "Clinic not found", 404)
     return clinic
@@ -33,9 +31,7 @@ async def public_clinic(slug: str) -> PublicClinicOut:
         services = (
             (
                 await db.execute(
-                    select(Service)
-                    .where(Service.clinic_id == clinic.id, Service.is_active)
-                    .order_by(Service.name)
+                    select(Service).where(Service.clinic_id == clinic.id, Service.is_active).order_by(Service.name)
                 )
             )
             .scalars()
@@ -44,9 +40,7 @@ async def public_clinic(slug: str) -> PublicClinicOut:
         doctors = (
             (
                 await db.execute(
-                    select(Doctor)
-                    .where(Doctor.clinic_id == clinic.id, Doctor.is_active)
-                    .order_by(Doctor.full_name)
+                    select(Doctor).where(Doctor.clinic_id == clinic.id, Doctor.is_active).order_by(Doctor.full_name)
                 )
             )
             .scalars()

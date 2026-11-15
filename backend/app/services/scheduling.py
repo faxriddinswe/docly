@@ -27,9 +27,7 @@ def _interval(r: Range[datetime]) -> Interval:
 ACTIVE = (AppointmentStatus.booked, AppointmentStatus.confirmed)
 
 
-async def load_bookable(
-    session: AsyncSession, doctor_id: uuid.UUID, service_id: uuid.UUID
-) -> tuple[Doctor, Service]:
+async def load_bookable(session: AsyncSession, doctor_id: uuid.UUID, service_id: uuid.UUID) -> tuple[Doctor, Service]:
     doctor = await session.get(Doctor, doctor_id)
     service = await session.get(Service, service_id)
     if doctor is None or not doctor.is_active:
@@ -58,9 +56,7 @@ async def available_slots(
     wh = (
         (
             await session.execute(
-                select(WorkingHours).where(
-                    WorkingHours.doctor_id == doctor_id, WorkingHours.weekday == day.weekday()
-                )
+                select(WorkingHours).where(WorkingHours.doctor_id == doctor_id, WorkingHours.weekday == day.weekday())
             )
         )
         .scalars()
@@ -68,13 +64,7 @@ async def available_slots(
     )
     window = Range(day_start, day_end, bounds="[)")
     offs = (
-        (
-            await session.execute(
-                select(TimeOff).where(
-                    TimeOff.doctor_id == doctor_id, TimeOff.during.overlaps(window)
-                )
-            )
-        )
+        (await session.execute(select(TimeOff).where(TimeOff.doctor_id == doctor_id, TimeOff.during.overlaps(window))))
         .scalars()
         .all()
     )

@@ -35,9 +35,7 @@ def _is_overlap_violation(exc: IntegrityError) -> bool:
     return sqlstate == "23P01" or "appointments_no_overlap" in str(exc)
 
 
-async def _upsert_patient(
-    session: AsyncSession, clinic_id: uuid.UUID, phone: str, full_name: str
-) -> uuid.UUID:
+async def _upsert_patient(session: AsyncSession, clinic_id: uuid.UUID, phone: str, full_name: str) -> uuid.UUID:
     stmt = (
         pg_insert(Patient)
         .values(clinic_id=clinic_id, phone=phone, full_name=full_name)
@@ -109,9 +107,7 @@ async def create_appointment(
     except IntegrityError as exc:
         if _is_overlap_violation(exc):
             # The DB exclusion constraint is the source of truth for double booking.
-            raise AppError(
-                "SLOT_TAKEN", "This slot was just taken, please pick another", 409
-            ) from exc
+            raise AppError("SLOT_TAKEN", "This slot was just taken, please pick another", 409) from exc
         raise
     await audit.record(
         session,
@@ -151,9 +147,7 @@ async def reschedule(
             await session.flush()
     except IntegrityError as exc:
         if _is_overlap_violation(exc):
-            raise AppError(
-                "SLOT_TAKEN", "This slot was just taken, please pick another", 409
-            ) from exc
+            raise AppError("SLOT_TAKEN", "This slot was just taken, please pick another", 409) from exc
         raise
     # Old reminders were for the old time: clear them so new ones can be scheduled.
     await session.execute(delete(Notification).where(Notification.appointment_id == appt.id))
@@ -177,9 +171,7 @@ async def change_status(
     actor_user_id: uuid.UUID | None,
 ) -> Appointment:
     if new_status not in TRANSITIONS[appt.status]:
-        raise AppError(
-            "INVALID_TRANSITION", f"Cannot go from {appt.status.value} to {new_status.value}", 409
-        )
+        raise AppError("INVALID_TRANSITION", f"Cannot go from {appt.status.value} to {new_status.value}", 409)
     old = appt.status
     appt.status = new_status
     await session.flush()
@@ -195,13 +187,9 @@ async def change_status(
     return appt
 
 
-async def get_appointment(
-    session: AsyncSession, clinic_id: uuid.UUID, appt_id: uuid.UUID
-) -> Appointment:
+async def get_appointment(session: AsyncSession, clinic_id: uuid.UUID, appt_id: uuid.UUID) -> Appointment:
     appt = (
-        await session.execute(
-            select(Appointment).where(Appointment.clinic_id == clinic_id, Appointment.id == appt_id)
-        )
+        await session.execute(select(Appointment).where(Appointment.clinic_id == clinic_id, Appointment.id == appt_id))
     ).scalar_one_or_none()
     if appt is None:
         raise AppError("NOT_FOUND", "Appointment not found", 404)

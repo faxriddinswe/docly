@@ -68,9 +68,7 @@ async def test_refresh_rotation_and_reuse_detection(client: AsyncClient) -> None
 
 async def test_logout_revokes_refresh(client: AsyncClient) -> None:
     a = await signup(client)
-    assert (
-        await client.post("/auth/logout", json={"refresh_token": a["refresh_token"]})
-    ).status_code == 204
+    assert (await client.post("/auth/logout", json={"refresh_token": a["refresh_token"]})).status_code == 204
     r = await client.post("/auth/refresh", json={"refresh_token": a["refresh_token"]})
     assert r.status_code == 401
 
@@ -96,13 +94,9 @@ async def test_role_rules(client: AsyncClient) -> None:
     assert r.status_code == 201
     doc = mk("doctor")
     assert (await client.post("/staff", json=doc, headers=owner["h"])).status_code == 201
-    admin_login = await client.post(
-        "/auth/login", json={"email": r.json()["email"], "password": PASSWORD}
-    )
+    admin_login = await client.post("/auth/login", json={"email": r.json()["email"], "password": PASSWORD})
     ah = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
-    assert (
-        await client.post("/staff", json=mk("admin"), headers=ah)
-    ).status_code == 403  # admin can't mint admins
+    assert (await client.post("/staff", json=mk("admin"), headers=ah)).status_code == 403  # admin can't mint admins
     assert (await client.post("/staff", json=mk("doctor"), headers=ah)).status_code == 201
     dl = await client.post("/auth/login", json={"email": doc["email"], "password": PASSWORD})
     dh = {"Authorization": f"Bearer {dl.json()['access_token']}"}

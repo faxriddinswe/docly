@@ -58,9 +58,7 @@ ENDPOINTS: list[tuple[str, str, Any]] = [
 
 
 @pytest.mark.parametrize(("method", "path", "body"), ENDPOINTS)
-async def test_clinic_a_cannot_touch_clinic_b(
-    client: AsyncClient, method: str, path: str, body: Any
-) -> None:
+async def test_clinic_a_cannot_touch_clinic_b(client: AsyncClient, method: str, path: str, body: Any) -> None:
     a, b = await signup(client, "a"), await signup(client, "b")
     ids = await _make_b_resources(client, b)
     r = await client.request(method, path.format(**ids), json=body, headers=a["h"])
@@ -70,22 +68,15 @@ async def test_clinic_a_cannot_touch_clinic_b(
     assert d["is_active"] is True and d["full_name"] == "Dr. Karimov"
     s = (await client.get(f"/services/{ids['service_id']}", headers=b["h"])).json()
     assert s["is_active"] is True and s["name"] == "Cleaning"
-    assert (
-        len((await client.get(f"/doctors/{ids['doctor_id']}/time-off", headers=b["h"])).json()) == 1
-    )
-    assert (
-        len((await client.get(f"/doctors/{ids['doctor_id']}/working-hours", headers=b["h"])).json())
-        == 10
-    )
+    assert len((await client.get(f"/doctors/{ids['doctor_id']}/time-off", headers=b["h"])).json()) == 1
+    assert len((await client.get(f"/doctors/{ids['doctor_id']}/working-hours", headers=b["h"])).json()) == 10
 
 
 async def test_a_cannot_link_b_service_to_own_doctor(client: AsyncClient) -> None:
     a, b = await signup(client, "a"), await signup(client, "b")
     ids = await _make_b_resources(client, b)
     mine = (await client.post("/doctors", headers=a["h"], json={"full_name": "Dr. Mine"})).json()
-    r = await client.put(
-        f"/doctors/{mine['id']}/services", headers=a["h"], json={"service_ids": [ids["service_id"]]}
-    )
+    r = await client.put(f"/doctors/{mine['id']}/services", headers=a["h"], json={"service_ids": [ids["service_id"]]})
     assert r.status_code == 404
 
 

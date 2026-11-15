@@ -8,9 +8,7 @@ class Settings(BaseSettings):
 
     project_name: str = "Docly"
     env: str = "dev"
-    database_url: str = (
-        "postgresql+asyncpg://docly_app:docly_app@localhost:5442/docly"  # RLS-subject role
-    )
+    database_url: str = "postgresql+asyncpg://docly_app:docly_app@localhost:5442/docly"  # RLS-subject role
     migration_database_url: str = "postgresql+asyncpg://docly:docly@localhost:5442/docly"  # owner
     redis_url: str = "redis://localhost:6390/0"
     jwt_secret: str = "dev-only-change-me-0000000000000000"
@@ -23,6 +21,10 @@ class Settings(BaseSettings):
     eskiz_email: str = ""
     eskiz_password: str = ""
     eskiz_from: str = "4546"
+    telegram_bot_token: str = ""
+    telegram_bot_username: str = ""
+    reminder_24h_tolerance_minutes: int = 60
+    reminder_2h_tolerance_minutes: int = 30
     default_timezone: str = "Asia/Tashkent"
 
     def validate_prod(self) -> None:

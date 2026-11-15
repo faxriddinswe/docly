@@ -25,9 +25,7 @@ async def seed() -> None:
     async with engine.begin() as conn:
         await conn.execute(text("SELECT set_config('app.system','on',true)"))
         for name, slug, email in CLINICS:
-            if (
-                await conn.execute(text("SELECT 1 FROM clinics WHERE slug=:s"), {"s": slug})
-            ).first():
+            if (await conn.execute(text("SELECT 1 FROM clinics WHERE slug=:s"), {"s": slug})).first():
                 continue
             cid, uid, did, sid = (uuid.uuid4() for _ in range(4))
             await conn.execute(
@@ -35,21 +33,15 @@ async def seed() -> None:
                 {"i": cid, "n": name, "s": slug},
             )
             await conn.execute(
-                text(
-                    "INSERT INTO users(id,email,password_hash,full_name) VALUES (:i,:e,:h,'Demo Owner')"
-                ),
+                text("INSERT INTO users(id,email,password_hash,full_name) VALUES (:i,:e,:h,'Demo Owner')"),
                 {"i": uid, "e": email, "h": ph.hash("demo-password-123")},
             )
             await conn.execute(
-                text(
-                    "INSERT INTO clinic_memberships(clinic_id,user_id,role) VALUES (:c,:u,'owner')"
-                ),
+                text("INSERT INTO clinic_memberships(clinic_id,user_id,role) VALUES (:c,:u,'owner')"),
                 {"c": cid, "u": uid},
             )
             await conn.execute(
-                text(
-                    "INSERT INTO doctors(id,clinic_id,full_name,specialty) VALUES (:d,:c,'Dr. Aliyev','Dentist')"
-                ),
+                text("INSERT INTO doctors(id,clinic_id,full_name,specialty) VALUES (:d,:c,'Dr. Aliyev','Dentist')"),
                 {"d": did, "c": cid},
             )
             await conn.execute(
@@ -60,9 +52,7 @@ async def seed() -> None:
                 {"s": sid, "c": cid},
             )
             await conn.execute(
-                text(
-                    "INSERT INTO doctor_services(doctor_id,service_id,clinic_id) VALUES (:d,:s,:c)"
-                ),
+                text("INSERT INTO doctor_services(doctor_id,service_id,clinic_id) VALUES (:d,:s,:c)"),
                 {"d": did, "s": sid, "c": cid},
             )
             for wd in range(5):  # Mon-Fri, lunch break 13-14

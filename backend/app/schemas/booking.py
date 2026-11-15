@@ -73,6 +73,7 @@ class AppointmentOut(BaseModel):
 class PublicBookingOut(BaseModel):
     appointment: AppointmentOut
     manage_token: str
+    telegram_link: str | None = None
 
 
 class PatientOut(BaseModel):

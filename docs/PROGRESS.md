@@ -2,9 +2,9 @@
 
 ## CURRENT STATE / NEXT STEP
 - Project name: **Docly** (owner-chosen; replaces "Nexto" in the spec).
-- Done: Phases 0-4 (skeleton, data model+RLS, auth/tenancy, scheduling, booking).
-- NEXT: Phase 5 — Telegram bot (aiogram, interface + fake), deep-link linking with signed token, ARQ reminders 24h/2h, idempotency tests.
-  Reschedule already deletes notification rows; reminder job must also re-check appointment state at send time.
+- Done: Phases 0-5 (skeleton, data model+RLS, auth/tenancy, scheduling, booking, Telegram+reminders).
+- NEXT: Phase 6 — frontend (Next.js App Router, TS, Tailwind, TanStack Query, types generated from OpenAPI): public booking, dashboard, superadmin.
+  Need a script to dump openapi.json (backend) -> generate types. Dev stack (api/worker/bot services) not yet in compose; add in Phase 8.
   Add every new tenant endpoint to ENDPOINTS in backend/tests/test_isolation.py.
 - Not done yet: frontend (Phase 6), CI never run remotely (no remote), no Redis usage yet.
 
@@ -24,3 +24,6 @@
   manage-token cancel/reschedule, status transitions, audit. pytest: 51 passed. Concurrency: 12 parallel requests -> exactly one 201.
   Finding: in-process ASGI requests serialize enough that the service pre-check catches losers, so a second test uses an
   asyncio.Barrier inside the real availability check to force a true race decided only by the PG exclusion constraint (10 racers -> 1x201, 9x SLOT_TAKEN).
+- 2026-11-15 Phase 5: Transport interface (+Fake, Aiogram), 64-char HMAC deep-link token, bot flow (/start, confirm/cancel callbacks authorised by chat id),
+  reminder scanner with claim-then-send idempotency + row lock, ARQ worker (cron every minute). pytest: 60 passed (x2 runs, stable).
+  Found+fixed: test pollution (shared DB) -> truncate per test; candidate query must test lower(during) in window, not range overlap.
