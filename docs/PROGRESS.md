@@ -2,8 +2,8 @@
 
 ## CURRENT STATE / NEXT STEP
 - Project name: **Docly** (owner-chosen; replaces "Nexto" in the spec).
-- Done: Phase 0 (skeleton), Phase 1 (data model, migrations, RLS, seed), Phase 2 (auth, tenancy).
-- NEXT: Phase 3 — scheduling core: doctors/services/working hours/time-off CRUD + availability algorithm + tests.
+- Done: Phases 0-3 (skeleton, data model+RLS, auth/tenancy, scheduling core + availability).
+- NEXT: Phase 4 — booking: public flow with fake OTP (Redis), constraint->409 SLOT_TAKEN, concurrency test, cancel/reschedule, audit.
   Add every new tenant endpoint to ENDPOINTS in backend/tests/test_isolation.py.
 - Not done yet: frontend (Phase 6), CI never run remotely (no remote), no Redis usage yet.
 
@@ -17,3 +17,5 @@
   migration 0002 (refresh_tokens.clinic_id). ruff clean, mypy clean, pytest: 15 passed. Fixed along the way: asyncpg needs
   real datetime/time objects (not strings); server-side column defaults needed for raw SQL inserts; family revocation must
   commit before the 401 is raised.
+- 2026-11-15 Phase 3: doctors/services/working-hours/time-off CRUD, pure domain.availability (9 unit tests), /public/{slug} and
+  /public/{slug}/availability. ruff+mypy clean; pytest: 41 passed (incl. 13 parametrized cross-tenant endpoint checks).

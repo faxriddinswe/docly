@@ -7,6 +7,8 @@ from sqlalchemy import text
 
 from app.api import auth as auth_api
 from app.api import clinic as clinic_api
+from app.api import public as public_api
+from app.api import scheduling as scheduling_api
 from app.api import superadmin as superadmin_api
 from app.core.config import get_settings
 from app.core.errors import AppError, install_error_handlers
@@ -33,6 +35,8 @@ def create_app() -> FastAPI:
     app.include_router(auth_api.router)
     app.include_router(clinic_api.router)
     app.include_router(superadmin_api.router)
+    app.include_router(scheduling_api.router)
+    app.include_router(public_api.router)
 
     @app.get("/health")
     async def health() -> dict[str, str]:

@@ -13,3 +13,9 @@ App layer: ScopedRepo + clinic_id from JWT only. DB layer: RLS FORCE on every te
 ## D4 Refresh tokens
 Opaque random 48 bytes, stored as sha256, single-use rotation within a family; reuse revokes the family. Access JWT HS256, 15 min.
 Login for a user in several clinics requires clinic_slug (400 CLINIC_REQUIRED lists options).
+
+## D5 Slot grid
+Slots lie on a grid of `service.duration` starting at each working interval's start; a slot must fit inside one interval
+(never crosses lunch). Chosen over a fixed 15-min step: clean UI, fewer fragmented gaps. Trade-off: less flexible start times.
+## D6 Soft delete for doctors/services
+DELETE sets is_active=false; appointments keep RESTRICT foreign keys so history never dangles.
