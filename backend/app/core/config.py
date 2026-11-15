@@ -8,7 +8,10 @@ class Settings(BaseSettings):
 
     project_name: str = "Docly"
     env: str = "dev"
-    database_url: str = "postgresql+asyncpg://docly:docly@localhost:5442/docly"
+    database_url: str = (
+        "postgresql+asyncpg://docly_app:docly_app@localhost:5442/docly"  # RLS-subject role
+    )
+    migration_database_url: str = "postgresql+asyncpg://docly:docly@localhost:5442/docly"  # owner
     redis_url: str = "redis://localhost:6390/0"
     jwt_secret: str = "dev-only-change-me"
     access_token_minutes: int = 15
