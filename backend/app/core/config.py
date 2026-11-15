@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     access_token_minutes: int = 15
     refresh_token_days: int = 30
     min_booking_notice_minutes: int = 60
+    cors_origins: str = "http://localhost:3000"
     otp_ttl_seconds: int = 300
     otp_max_attempts: int = 5
     otp_sender: str = "fake"  # fake | eskiz

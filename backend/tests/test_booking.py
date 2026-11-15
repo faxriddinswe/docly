@@ -265,3 +265,24 @@ async def test_clinic_b_cannot_see_or_change_a_appointments(client: AsyncClient)
     assert (await client.get("/appointments", headers=b["h"])).json()["total"] == 0
     assert (await client.get("/patients", headers=b["h"])).json()["total"] == 0
     assert (await client.get(f"/appointments/{aid}", headers=a["o"]["h"])).json()["status"] == "booked"
+
+
+async def test_dev_otp_endpoint_exists_only_outside_prod(client: AsyncClient) -> None:
+    c = await setup_clinic(client)
+    code = await otp_for(client, c, "+998901234500")
+    r = await client.get("/public/dev/otp/+998901234500")
+    assert r.status_code == 200 and r.json()["code"] == code
+    import subprocess
+    import sys
+
+    out = subprocess.run(  # noqa: ASYNC221 - one-off child process to check prod route set
+        [
+            sys.executable,
+            "-c",
+            "from app.main import create_app; print(any('/dev/otp' in p for p in create_app().openapi()['paths']))",
+        ],
+        capture_output=True,
+        text=True,
+        env={**__import__("os").environ, "ENV": "prod", "JWT_SECRET": "x" * 40},
+    )
+    assert out.stdout.strip().endswith("False"), out.stderr

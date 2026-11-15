@@ -35,3 +35,8 @@ start in [now+24h-60m, now+24h], 2h reminder tolerance 30m, so a booking made 3h
 current state under FOR UPDATE SKIP LOCKED; reschedule deletes notification rows.
 ## D10 Deep link
 Telegram start payload limit is 64 chars of [A-Za-z0-9_-], so a JWT does not fit: token = b64(patient_id|clinic_id|exp) + b64(HMAC-12 bytes).
+
+## D11 Frontend choices
+Next.js 16 App Router, all data via TanStack Query on the client (tokens in localStorage: short access token + rotating refresh). Cache Components disabled
+(scaffold default) since the app is a client-rendered SPA behind auth; `output: standalone` for a small Docker image; system fonts (no Google Fonts at build time).
+Types generated from backend OpenAPI (`backend/scripts/dump_openapi.py` -> `frontend/openapi.json` -> `lib/schema.d.ts`). Trade-off: localStorage tokens are XSS-exposed.

@@ -2,11 +2,10 @@
 
 ## CURRENT STATE / NEXT STEP
 - Project name: **Docly** (owner-chosen; replaces "Nexto" in the spec).
-- Done: Phases 0-5 (skeleton, data model+RLS, auth/tenancy, scheduling, booking, Telegram+reminders).
-- NEXT: Phase 6 — frontend (Next.js App Router, TS, Tailwind, TanStack Query, types generated from OpenAPI): public booking, dashboard, superadmin.
-  Need a script to dump openapi.json (backend) -> generate types. Dev stack (api/worker/bot services) not yet in compose; add in Phase 8.
-  Add every new tenant endpoint to ENDPOINTS in backend/tests/test_isolation.py.
-- Not done yet: frontend (Phase 6), CI never run remotely (no remote), no Redis usage yet.
+- Done: Phases 0-6 (backend features + frontend).
+- NEXT: Phase 7 — hardening: global rate limiting, structured request logs, refuse fake OTP sender in prod, load test (k6/locust) with README table,
+  nightly pg_dump backup + tested restore. Then Phase 8 deploy (Dockerfiles, prod compose, edge caddy, deploy.sh, CI/CD), Phase 9 final docs.
+- Frontend has no automated tests yet (only tsc/eslint/next build + a manual browser run); consider Playwright.
 
 ## Log
 - 2026-11-15 Phase 0: env checked (see ENVIRONMENT.md). Installed uv 0.13.8 + Python 3.12.16 user-level.
@@ -27,3 +26,8 @@
 - 2026-11-15 Phase 5: Transport interface (+Fake, Aiogram), 64-char HMAC deep-link token, bot flow (/start, confirm/cancel callbacks authorised by chat id),
   reminder scanner with claim-then-send idempotency + row lock, ARQ worker (cron every minute). pytest: 60 passed (x2 runs, stable).
   Found+fixed: test pollution (shared DB) -> truncate per test; candidate query must test lower(during) in window, not range overlap.
+- 2026-11-15 Phase 6: stats endpoint (+test), CORS, ManageOut (clinic slug/tz for patient reschedule), dev-only OTP hint endpoint (not registered when ENV=prod).
+  Frontend: Next.js 16 (cacheComponents disabled, output standalone), TanStack Query, openapi-typescript types, public wizard, manage page, dashboard
+  (calendar day/week grid, appointments, doctors+hours+time off+services, patients, stats), superadmin page. `tsc`, `eslint`, `next build`: clean.
+  Manual browser run (Chrome): public booking end-to-end -> appears in dashboard calendar. Bug found by that run and fixed: auth fetch wrapper treated /auth/me as
+  public (no bearer) -> 401 loop. NOT browser-tested yet: signup, doctors editor, time off, superadmin, week view, mobile widths, reschedule on manage page.

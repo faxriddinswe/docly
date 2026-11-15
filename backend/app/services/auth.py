@@ -19,7 +19,21 @@ from app.core.security import (
 from app.models.tables import Clinic, ClinicMembership, RefreshToken, Role, User
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,60}$")
-RESERVED_SLUGS = {"admin", "api", "auth", "health", "ready", "public", "login", "signup", "docs"}
+RESERVED_SLUGS = {
+    "admin",
+    "api",
+    "auth",
+    "health",
+    "ready",
+    "public",
+    "login",
+    "signup",
+    "docs",
+    "dashboard",
+    "manage",
+    "static",
+    "_next",
+}
 
 
 class TokenReusedError(AppError):

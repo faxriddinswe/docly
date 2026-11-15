@@ -70,6 +70,12 @@ class AppointmentOut(BaseModel):
     status: AppointmentStatus
 
 
+class ManageOut(AppointmentOut):
+    clinic_name: str
+    clinic_slug: str
+    timezone: str
+
+
 class PublicBookingOut(BaseModel):
     appointment: AppointmentOut
     manage_token: str

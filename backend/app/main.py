@@ -3,6 +3,7 @@ from collections.abc import Awaitable, Callable
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.api import auth as auth_api
@@ -10,6 +11,7 @@ from app.api import booking as booking_api
 from app.api import clinic as clinic_api
 from app.api import public as public_api
 from app.api import scheduling as scheduling_api
+from app.api import stats as stats_api
 from app.api import superadmin as superadmin_api
 from app.core.config import get_settings
 from app.core.errors import AppError, install_error_handlers
@@ -22,6 +24,13 @@ def create_app() -> FastAPI:
     get_settings().validate_prod()
     app = FastAPI(title=get_settings().project_name, version="0.1.0")
     install_error_handlers(app)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[o.strip() for o in get_settings().cors_origins.split(",") if o.strip()],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["x-request-id"],
+    )
 
     @app.middleware("http")
     async def request_id_mw(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
@@ -35,6 +44,7 @@ def create_app() -> FastAPI:
     app.include_router(clinic_api.router)
     app.include_router(superadmin_api.router)
     app.include_router(scheduling_api.router)
+    app.include_router(stats_api.router)
     app.include_router(booking_api.public)
     app.include_router(public_api.router)
     app.include_router(booking_api.staff)

@@ -17,6 +17,7 @@ from app.db import system_session, tenant_session
 from app.models.tables import Appointment, AppointmentStatus, Clinic, Doctor, Patient, Service
 from app.schemas.booking import (
     AppointmentOut,
+    ManageOut,
     OtpRequestIn,
     PatientOut,
     PublicBookingIn,
@@ -98,6 +99,11 @@ async def public_book(slug: str, body: PublicBookingIn, request: Request) -> Pub
     return PublicBookingOut(appointment=out, manage_token=create_manage_token(appt.id, clinic.id), telegram_link=link)
 
 
+async def _manage_out(db: AsyncSession, clinic: Clinic, a: Appointment) -> ManageOut:
+    base = await _out(db, a)
+    return ManageOut(**base.model_dump(), clinic_name=clinic.name, clinic_slug=clinic.slug, timezone=clinic.timezone)
+
+
 async def _manage_ctx(token: str) -> tuple[Clinic, uuid.UUID]:
     try:
         appt_id, clinic_id = decode_manage_token(token)
@@ -110,24 +116,24 @@ async def _manage_ctx(token: str) -> tuple[Clinic, uuid.UUID]:
     return clinic, appt_id
 
 
-@public.get("/manage/{token}", response_model=AppointmentOut)
-async def manage_get(token: str) -> AppointmentOut:
+@public.get("/manage/{token}", response_model=ManageOut)
+async def manage_get(token: str) -> ManageOut:
     clinic, appt_id = await _manage_ctx(token)
     async with tenant_session(clinic.id) as db:
-        return await _out(db, await svc.get_appointment(db, clinic.id, appt_id))
+        return await _manage_out(db, clinic, await svc.get_appointment(db, clinic.id, appt_id))
 
 
-@public.post("/manage/{token}/cancel", response_model=AppointmentOut)
-async def manage_cancel(token: str) -> AppointmentOut:
+@public.post("/manage/{token}/cancel", response_model=ManageOut)
+async def manage_cancel(token: str) -> ManageOut:
     clinic, appt_id = await _manage_ctx(token)
     async with tenant_session(clinic.id) as db:
         a = await svc.get_appointment(db, clinic.id, appt_id)
         await svc.change_status(db, appt=a, new_status=AppointmentStatus.cancelled, actor_user_id=None)
-        return await _out(db, a)
+        return await _manage_out(db, clinic, a)
 
 
-@public.post("/manage/{token}/reschedule", response_model=AppointmentOut)
-async def manage_reschedule(token: str, body: RescheduleIn) -> AppointmentOut:
+@public.post("/manage/{token}/reschedule", response_model=ManageOut)
+async def manage_reschedule(token: str, body: RescheduleIn) -> ManageOut:
     clinic, appt_id = await _manage_ctx(token)
     async with tenant_session(clinic.id) as db:
         a = await svc.get_appointment(db, clinic.id, appt_id)
@@ -139,7 +145,7 @@ async def manage_reschedule(token: str, body: RescheduleIn) -> AppointmentOut:
             min_notice=_notice(),
             actor_user_id=None,
         )
-        return await _out(db, a)
+        return await _manage_out(db, clinic, a)
 
 
 # ---------------------------------------------------------------- staff
@@ -278,3 +284,12 @@ async def patient_history(
         .all()
     )
     return [await _out(db, a) for a in rows]
+
+
+if get_settings().env != "prod" and get_settings().otp_sender == "fake":
+
+    @public.get("/dev/otp/{phone}", tags=["dev"])
+    async def dev_last_otp(phone: str) -> dict[str, str | None]:
+        """DEV ONLY (not registered when ENV=prod): lets the UI/tests read the fake-sent code."""
+        code = await get_redis().get(f"otp:outbox:{otp.normalize_phone(phone)}")
+        return {"code": code}
