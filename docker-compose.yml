@@ -1,0 +1,20 @@
+# Dev stack: Postgres 16 + Redis. Host ports are non-default to avoid clashing with local services.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment: {POSTGRES_USER: docly, POSTGRES_PASSWORD: docly, POSTGRES_DB: docly}
+    ports: ["127.0.0.1:5442:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docly"]
+      interval: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:6390:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+volumes:
+  pgdata:
