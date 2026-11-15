@@ -19,7 +19,16 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest", "pytest-asyncio", "httpx", "ruff", "mypy", "testcontainers[postgres,redis]", "asgi-lifespan"]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+    "ruff",
+    "mypy",
+    "testcontainers[postgres,redis]",
+    "asgi-lifespan",
+    "locust>=2.47.0",
+]
 
 [tool.ruff]
 line-length = 120
