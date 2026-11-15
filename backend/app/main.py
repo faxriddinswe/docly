@@ -5,14 +5,18 @@ import redis.asyncio as aioredis
 from fastapi import FastAPI, Request, Response
 from sqlalchemy import text
 
+from app.api import auth as auth_api
+from app.api import clinic as clinic_api
+from app.api import superadmin as superadmin_api
 from app.core.config import get_settings
 from app.core.errors import AppError, install_error_handlers
 from app.core.logging import request_id_var, setup_logging
-from app.db import engine
+from app.db import get_engine
 
 
 def create_app() -> FastAPI:
     setup_logging()
+    get_settings().validate_prod()
     app = FastAPI(title=get_settings().project_name, version="0.1.0")
     install_error_handlers(app)
 
@@ -26,6 +30,10 @@ def create_app() -> FastAPI:
         response.headers["x-request-id"] = rid
         return response
 
+    app.include_router(auth_api.router)
+    app.include_router(clinic_api.router)
+    app.include_router(superadmin_api.router)
+
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok"}
@@ -33,7 +41,7 @@ def create_app() -> FastAPI:
     @app.get("/ready")
     async def ready() -> dict[str, str]:
         try:
-            async with engine.connect() as conn:
+            async with get_engine().connect() as conn:
                 await conn.execute(text("SELECT 1"))
             r = aioredis.Redis.from_url(get_settings().redis_url)
             try:

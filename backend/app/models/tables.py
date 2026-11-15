@@ -77,6 +77,7 @@ class ClinicMembership(Base, IdMixin, CreatedMixin):
 class RefreshToken(Base, IdMixin, CreatedMixin):
     __tablename__ = "refresh_tokens"
     user_id: Mapped[uuid.UUID] = _fk("users.id")
+    clinic_id: Mapped[uuid.UUID | None] = mapped_column(PGUUID(as_uuid=True))
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     family_id: Mapped[uuid.UUID] = mapped_column(PGUUID(as_uuid=True), index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

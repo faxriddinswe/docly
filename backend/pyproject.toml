@@ -45,3 +45,6 @@ testpaths = ["tests"]
 "tests/*" = ["E501", "N802"]
 "alembic/*" = ["E501"]
 "app/seed.py" = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["app.api.deps.require_roles", "fastapi.Depends", "fastapi.Query", "fastapi.Security"]

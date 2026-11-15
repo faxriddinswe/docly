@@ -13,11 +13,16 @@ class Settings(BaseSettings):
     )
     migration_database_url: str = "postgresql+asyncpg://docly:docly@localhost:5442/docly"  # owner
     redis_url: str = "redis://localhost:6390/0"
-    jwt_secret: str = "dev-only-change-me"
+    jwt_secret: str = "dev-only-change-me-0000000000000000"
     access_token_minutes: int = 15
     refresh_token_days: int = 30
     min_booking_notice_minutes: int = 60
     default_timezone: str = "Asia/Tashkent"
+
+    def validate_prod(self) -> None:
+        weak = {"dev-only-change-me-0000000000000000", "change-me", ""}
+        if self.env == "prod" and self.jwt_secret in weak:
+            raise RuntimeError("JWT_SECRET must be set in production")
 
 
 @lru_cache

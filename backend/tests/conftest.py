@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import subprocess
 import sys
@@ -5,6 +7,7 @@ from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import pytest
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from testcontainers.postgres import PostgresContainer
 
@@ -39,3 +42,28 @@ async def app_engine(pg_urls: dict[str, str]) -> AsyncIterator[AsyncEngine]:
     eng = create_async_engine(pg_urls["app"])
     yield eng
     await eng.dispose()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _env(pg_urls: dict[str, str]) -> Iterator[None]:
+    """Point the application at the test containers."""
+    from app.core.config import get_settings
+
+    os.environ["DATABASE_URL"] = pg_urls["app"]
+    os.environ["MIGRATION_DATABASE_URL"] = pg_urls["owner"]
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture
+async def client() -> AsyncIterator[AsyncClient]:
+    from httpx import ASGITransport
+
+    from app.db import reset_engine
+    from app.main import create_app
+
+    await reset_engine()  # engine must belong to this test's event loop
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://t") as c:
+        yield c
+    await reset_engine()
